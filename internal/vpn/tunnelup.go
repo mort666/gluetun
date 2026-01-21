@@ -13,6 +13,7 @@ import (
 	"github.com/qdm12/gluetun/internal/constants"
 	"github.com/qdm12/gluetun/internal/pmtud"
 	"github.com/qdm12/gluetun/internal/version"
+	"github.com/qdm12/log"
 )
 
 type tunnelUpData struct {
