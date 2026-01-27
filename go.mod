@@ -7,6 +7,7 @@ require (
 	github.com/breml/rootcerts v0.3.3
 	github.com/fatih/color v1.18.0
 	github.com/golang/mock v1.6.0
+	github.com/jsimonetti/rtnetlink v1.4.2
 	github.com/klauspost/compress v1.18.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/mort666/go-proton-api v0.4.9
@@ -20,7 +21,6 @@ require (
 	github.com/qdm12/ss-server v0.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
-	github.com/vishvananda/netlink v1.3.1
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a
 	golang.org/x/mod v0.33.0
@@ -54,9 +54,8 @@ require (
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mdlayher/genetlink v1.3.2 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
-	github.com/mdlayher/socket v0.4.1 // indirect
+	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/miekg/dns v1.1.62 // indirect
 	github.com/miteshbsjat/textfilekv v1.1.2-0.20250126134530-a415693fb0ba // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
