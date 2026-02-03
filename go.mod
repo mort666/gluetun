@@ -28,24 +28,29 @@ require (
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20230429144221-925a1e7659e6
 	gopkg.in/ini.v1 v1.67.0
+	rtlabs.cloud/protonsession v0.1.10
 )
 
 require (
 	github.com/ProtonMail/bcrypt v0.0.0-20211005172633-e235017c1baf // indirect
 	github.com/ProtonMail/go-crypto v1.3.0-proton // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bradenaw/juniper v0.15.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cronokirby/saferith v0.33.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff // indirect
+	github.com/go-resty/resty/v2 v2.16.5 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mdlayher/genetlink v1.3.2 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
-	github.com/mdlayher/socket v0.4.1 // indirect
-	github.com/miekg/dns v1.1.62 // indirect
+	github.com/mdlayher/socket v0.5.1 // indirect
+	github.com/miekg/dns v1.1.66 // indirect
+	github.com/miteshbsjat/textfilekv v1.1.2-0.20250126134530-a415693fb0ba // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -62,8 +67,8 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kernel.org/pub/linux/libs/security/libcap/cap v1.2.70 // indirect
-	kernel.org/pub/linux/libs/security/libcap/psx v1.2.70 // indirect
+	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.76 // indirect
 )

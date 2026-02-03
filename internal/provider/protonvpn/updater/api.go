@@ -12,10 +12,12 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/netip"
-	"slices"
-	"strings"
+	"os"
 
-	srp "github.com/ProtonMail/go-srp"
+	"github.com/mort666/go-proton-api"
+	common "rtlabs.cloud/protonsession"
+
+	"github.com/qdm12/gluetun/internal/constants"
 )
 
 // apiClient is a minimal Proton v4 API client which can handle all the
@@ -583,14 +585,71 @@ type physicalServer struct {
 func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
 	data apiData, err error,
 ) {
+	var pmSession *common.Session
+	var keypass []byte
+
+	username := os.Getenv("PROTON_USERNAME")
+	password := os.Getenv("PROTON_PASSWORD")
+
+	const TokenType = "Bearer"
+	const AppVersion = "other"
+	const ProtonAppVer = "web-account@5.0.235.1" // Setting this here incase version needs updating
+
+	sessionStore := common.NewFileStore(constants.ServersDataPath+"/proton-sessions.db", "default")
+	sessionStore.CacheDir = false
+
+	protonOptions := []proton.Option{
+		proton.WithAppVersion(AppVersion),
+	}
+
+	sessionConfig, err := sessionStore.Load()
+	if err != nil {
+		if err == common.ErrKeyNotFound {
+			pmSession, err = common.SessionFromLogin(ctx, protonOptions, username, password)
+			if err != nil {
+				return data, err
+			}
+
+			keypass, err = common.SaltKeyPass(ctx, pmSession.Client, []byte(password))
+			if err != nil {
+				return data, err
+			}
+		} else {
+			return data, err
+		}
+	} else {
+		sessionCreds := &common.SessionCredentials{
+			UID:          sessionConfig.UID,
+			AccessToken:  sessionConfig.AccessToken,
+			RefreshToken: sessionConfig.RefreshToken,
+		}
+
+		pmSession, err = common.SessionFromRefresh(ctx, protonOptions, sessionCreds)
+		if err != nil {
+			return data, err
+		}
+	}
+
+	// Old Logicals API endpoint: https://api.protonmail.ch/vpn/logicals
+	// New Logicals API endpoint: https://account.proton.me/api/vpn/logicals
+
 	const url = "https://account.proton.me/api/vpn/logicals"
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return data, err
 	}
 	c.setHeaders(request, cookie)
 
-	response, err := c.httpClient.Do(request)
+	// Setup the auth token from the newly obtained session, the logicals API end
+	// point requires in addition to the auth token two custom header entries
+	// one specifying the app that made the request and the proton uid attached
+	// to the session. If either are missing a HTTP 401 is returned
+	request.Header.Set("Authorization", TokenType+" "+pmSession.Auth.AccessToken)
+	request.Header.Set("x-pm-uid", pmSession.Auth.UID)
+	request.Header.Set("x-pm-appversion", ProtonAppVer)
+
+	response, err := client.Do(request)
 	if err != nil {
 		return data, err
 	}
@@ -626,11 +685,16 @@ func buildError(httpCode int, body []byte) error {
 			ErrHTTPStatusCodeNotOK, prettyCode, body)
 	}
 
-	details := make([]string, 0, len(protonError.Details))
-	for key, value := range protonError.Details {
-		details = append(details, fmt.Sprintf("%s: %s", key, value))
+	config := common.SessionConfig{
+		UID:           pmSession.Auth.UID,
+		RefreshToken:  pmSession.Auth.RefreshToken,
+		AccessToken:   pmSession.Auth.AccessToken,
+		SaltedKeyPass: common.Base64Encode(keypass),
 	}
 
-	return fmt.Errorf("%w: %s: %s (code %d with details: %s)",
-		ErrHTTPStatusCodeNotOK, prettyCode, *protonError.Error, *protonError.Code, strings.Join(details, ", "))
+	if err := sessionStore.Save(&config); err != nil {
+		return data, nil
+	}
+
+	return data, nil
 }
