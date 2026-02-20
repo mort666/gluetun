@@ -549,7 +549,7 @@ type netLinker interface {
 	Router
 	Ruler
 	Linker
-	IsWireguardSupported() (ok bool, err error)
+	IsWireguardSupported() bool
 	IsIPv6Supported() (ok bool, err error)
 	PatchLoggerLevel(level log.Level)
 }
@@ -581,6 +581,7 @@ type Linker interface {
 	LinkDel(link netlink.Link) (err error)
 	LinkSetUp(link netlink.Link) (linkIndex int, err error)
 	LinkSetDown(link netlink.Link) (err error)
+	LinkSetMTU(link netlink.Link, mtu uint32) error
 }
 
 type clier interface {

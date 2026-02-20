@@ -1,5 +1,3 @@
-//go:build linux || darwin
-
 package netlink
 
 import "github.com/vishvananda/netlink"
@@ -60,6 +58,10 @@ func (n *NetLink) LinkSetUp(link Link) (linkIndex int, err error) {
 
 func (n *NetLink) LinkSetDown(link Link) (err error) {
 	return netlink.LinkSetDown(linkToNetlinkLink(&link))
+}
+
+func (n *NetLink) LinkSetMTU(link Link, mtu uint32) error {
+	return netlink.LinkSetMTU(linkToNetlinkLink(&link), int(mtu))
 }
 
 type netlinkLinkImpl struct {

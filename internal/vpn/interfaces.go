@@ -61,7 +61,7 @@ type NetLinker interface {
 	Router
 	Ruler
 	Linker
-	IsWireguardSupported() (ok bool, err error)
+	IsWireguardSupported() bool
 }
 
 type Router interface {
@@ -81,6 +81,7 @@ type Linker interface {
 	LinkDel(link netlink.Link) (err error)
 	LinkSetUp(link netlink.Link) (linkIndex int, err error)
 	LinkSetDown(link netlink.Link) (err error)
+	LinkSetMTU(link netlink.Link, mtu uint32) (err error)
 }
 
 type DNSLoop interface {
