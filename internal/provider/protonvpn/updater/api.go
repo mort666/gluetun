@@ -13,7 +13,10 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"slices"
+	"strings"
 
+	srp "github.com/ProtonMail/go-srp"
 	"github.com/mort666/go-proton-api"
 	common "rtlabs.cloud/protonsession"
 
@@ -639,17 +642,19 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
 	if err != nil {
 		return data, err
 	}
-	c.setHeaders(request, cookie)
+	// c.setHeaders(request, cookie)
 
 	// Setup the auth token from the newly obtained session, the logicals API end
 	// point requires in addition to the auth token two custom header entries
 	// one specifying the app that made the request and the proton uid attached
 	// to the session. If either are missing a HTTP 401 is returned
 	request.Header.Set("Authorization", TokenType+" "+pmSession.Auth.AccessToken)
+	request.Header.Set("User-Agent", c.userAgent)
 	request.Header.Set("x-pm-uid", pmSession.Auth.UID)
-	request.Header.Set("x-pm-appversion", ProtonAppVer)
+	request.Header.Set("x-pm-appversion", c.appVersion)
+	request.Header.Set("x-pm-locale", "en_US")
 
-	response, err := client.Do(request)
+	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return data, err
 	}
@@ -663,6 +668,17 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
 	decoder := json.NewDecoder(response.Body)
 	if err := decoder.Decode(&data); err != nil {
 		return data, fmt.Errorf("decoding response body: %w", err)
+	}
+
+	config := common.SessionConfig{
+		UID:           pmSession.Auth.UID,
+		RefreshToken:  pmSession.Auth.RefreshToken,
+		AccessToken:   pmSession.Auth.AccessToken,
+		SaltedKeyPass: common.Base64Encode(keypass),
+	}
+
+	if err := sessionStore.Save(&config); err != nil {
+		return data, nil
 	}
 
 	return data, nil
@@ -685,16 +701,10 @@ func buildError(httpCode int, body []byte) error {
 			ErrHTTPStatusCodeNotOK, prettyCode, body)
 	}
 
-	config := common.SessionConfig{
-		UID:           pmSession.Auth.UID,
-		RefreshToken:  pmSession.Auth.RefreshToken,
-		AccessToken:   pmSession.Auth.AccessToken,
-		SaltedKeyPass: common.Base64Encode(keypass),
+	details := make([]string, 0, len(protonError.Details))
+	for key, value := range protonError.Details {
+		details = append(details, fmt.Sprintf("%s: %s", key, value))
 	}
 
-	if err := sessionStore.Save(&config); err != nil {
-		return data, nil
-	}
-
-	return data, nil
+	return fmt.Errorf("%w: %s: %s (code %d with details: %s)", ErrHTTPStatusCodeNotOK, prettyCode, *protonError.Error, *protonError.Code, strings.Join(details, ", "))
 }

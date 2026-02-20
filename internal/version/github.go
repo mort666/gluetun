@@ -52,7 +52,6 @@ func getGithubReleases(ctx context.Context, client *http.Client) (releases []git
 	return releases, nil
 }
 
-// modded 2025-05-17 to point commit check to fork to stop error
 func getGithubCommits(ctx context.Context, client *http.Client) (commits []githubCommit, err error) {
 	const url = "https://api.github.com/repos/mort666/gluetun/commits"
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

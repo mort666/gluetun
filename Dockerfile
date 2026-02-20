@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile-upstream:master
+
 ARG ALPINE_VERSION=3.22
 ARG GO_ALPINE_VERSION=3.22
 ARG GO_VERSION=1.25

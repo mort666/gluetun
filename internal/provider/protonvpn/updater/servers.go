@@ -25,10 +25,11 @@ func (u *Updater) FetchServers(ctx context.Context, minServers int) (
 		return nil, fmt.Errorf("creating API client: %w", err)
 	}
 
-	cookie, err := apiClient.authenticate(ctx, u.email, u.password)
-	if err != nil {
-		return nil, fmt.Errorf("authentifying with Proton: %w", err)
-	}
+	cookie := cookie{}
+	// cookie, err := apiClient.authenticate(ctx, u.email, u.password)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("authentifying with Proton: %w", err)
+	// }
 
 	data, err := apiClient.fetchServers(ctx, cookie)
 	if err != nil {
