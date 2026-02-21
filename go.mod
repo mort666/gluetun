@@ -67,10 +67,10 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/qdm12/goservices v0.1.1-0.20251104135713-6bee97bd4978 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
-	github.com/sirupsen/logrus v1.9.4 // indirect
-	github.com/vishvananda/netns v0.0.5 // indirect
-	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a // indirect
-	golang.org/x/crypto v0.48.0 // indirect
+	github.com/ti-mo/conntrack v0.6.0 // indirect
+	github.com/ti-mo/netfilter v0.5.3 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
