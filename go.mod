@@ -16,7 +16,7 @@ require (
 	github.com/qdm12/dns/v2 v2.0.0-rc9.0.20260216151239-36b3306f2205
 	github.com/qdm12/gosettings v0.4.4
 	github.com/qdm12/goshutdown v0.3.0
-	github.com/qdm12/gosplash v0.2.0
+	github.com/qdm12/gosplash v0.2.1-0.20260305164749-b713de4fee6c
 	github.com/qdm12/gotree v0.3.0
 	github.com/qdm12/log v0.1.0
 	github.com/qdm12/ss-server v0.6.0
