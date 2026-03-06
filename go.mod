@@ -24,9 +24,8 @@ require (
 	github.com/ti-mo/netfilter v0.5.3
 	github.com/ulikunitz/xz v0.5.15
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
-	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a
-	golang.org/x/mod v0.33.0
-	golang.org/x/net v0.50.0
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
+	golang.org/x/net v0.51.0
 	golang.org/x/sys v0.41.0
 	golang.org/x/text v0.34.0
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
@@ -68,10 +67,11 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/qdm12/goservices v0.1.1-0.20251104135713-6bee97bd4978 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
-	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
