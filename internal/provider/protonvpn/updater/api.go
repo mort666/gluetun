@@ -12,7 +12,6 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/netip"
-	"os"
 	"slices"
 	"strings"
 
@@ -585,24 +584,19 @@ type physicalServer struct {
 	X25519PublicKey string     `json:"X25519PublicKey"`
 }
 
-func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
+func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, password string) (
 	data apiData, err error,
 ) {
 	var pmSession *common.Session
 	var keypass []byte
 
-	username := os.Getenv("PROTON_USERNAME")
-	password := os.Getenv("PROTON_PASSWORD")
-
 	const TokenType = "Bearer"
-	const AppVersion = "other"
-	const ProtonAppVer = "web-account@5.0.235.1" // Setting this here incase version needs updating
 
 	sessionStore := common.NewFileStore(constants.ServersDataPath+"/proton-sessions.db", "default")
 	sessionStore.CacheDir = false
 
 	protonOptions := []proton.Option{
-		proton.WithAppVersion(AppVersion),
+		proton.WithAppVersion(c.appVersion),
 	}
 
 	sessionConfig, err := sessionStore.Load()

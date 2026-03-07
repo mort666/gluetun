@@ -23,6 +23,7 @@ require (
 	github.com/vishvananda/netlink v1.3.1
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a
+	golang.org/x/mod v0.33.0
 	golang.org/x/net v0.50.0
 	golang.org/x/sys v0.41.0
 	golang.org/x/text v0.34.0
@@ -71,7 +72,6 @@ require (
 	github.com/vishvananda/netns v0.0.5 // indirect
 	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a // indirect
 	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect

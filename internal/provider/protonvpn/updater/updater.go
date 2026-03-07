@@ -10,14 +10,16 @@ type Updater struct {
 	client   *http.Client
 	email    string
 	password string
+	username string
 	warner   common.Warner
 }
 
-func New(client *http.Client, warner common.Warner, email, password string) *Updater {
+func New(client *http.Client, warner common.Warner, email, password, username string) *Updater {
 	return &Updater{
 		client:   client,
 		email:    email,
 		password: password,
+		username: username,
 		warner:   warner,
 	}
 }

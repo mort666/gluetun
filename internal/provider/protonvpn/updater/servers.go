@@ -18,6 +18,8 @@ func (u *Updater) FetchServers(ctx context.Context, minServers int) (
 		return nil, fmt.Errorf("%w: email is empty", common.ErrCredentialsMissing)
 	case u.password == "":
 		return nil, fmt.Errorf("%w: password is empty", common.ErrCredentialsMissing)
+	case u.username == "":
+		return nil, fmt.Errorf("%w: username is empty", common.ErrCredentialsMissing)
 	}
 
 	apiClient, err := newAPIClient(ctx, u.client)
@@ -31,7 +33,7 @@ func (u *Updater) FetchServers(ctx context.Context, minServers int) (
 	// 	return nil, fmt.Errorf("authentifying with Proton: %w", err)
 	// }
 
-	data, err := apiClient.fetchServers(ctx, cookie)
+	data, err := apiClient.fetchServers(ctx, cookie, u.username, u.password)
 	if err != nil {
 		return nil, fmt.Errorf("fetching logical servers: %w", err)
 	}
