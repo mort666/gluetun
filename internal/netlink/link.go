@@ -60,8 +60,8 @@ func (n *NetLink) LinkSetDown(link Link) (err error) {
 	return netlink.LinkSetDown(linkToNetlinkLink(&link))
 }
 
-func (n *NetLink) LinkSetMTU(link Link, mtu uint32) error {
-	return netlink.LinkSetMTU(linkToNetlinkLink(&link), int(mtu))
+func (n *NetLink) LinkSetMTU(link Link, mtu int) error {
+	return netlink.LinkSetMTU(linkToNetlinkLink(&link), mtu)
 }
 
 type netlinkLinkImpl struct {
