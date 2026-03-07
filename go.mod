@@ -13,7 +13,7 @@ require (
 	github.com/mort666/go-proton-api v0.4.9
 	github.com/mdlayher/netlink v1.7.2
 	github.com/pelletier/go-toml/v2 v2.2.4
-	github.com/qdm12/dns/v2 v2.0.0-rc9.0.20260216151239-36b3306f2205
+	github.com/qdm12/dns/v2 v2.0.0-rc9.0.20260227125914-6dbc4b280dc6
 	github.com/qdm12/gosettings v0.4.4
 	github.com/qdm12/goshutdown v0.3.0
 	github.com/qdm12/gosplash v0.2.1-0.20260305164749-b713de4fee6c
