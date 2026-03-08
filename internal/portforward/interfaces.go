@@ -10,11 +10,12 @@ type Service interface {
 	Start(ctx context.Context) (runError <-chan error, err error)
 	Stop() (err error)
 	GetPortsForwarded() (ports []uint16)
+	SetPortsForwarded(ctx context.Context, ports []uint16) (err error)
 }
 
 type Routing interface {
 	VPNLocalGatewayIP(vpnInterface string) (gateway netip.Addr, err error)
-	AssignedIP(interfaceName string, family int) (ip netip.Addr, err error)
+	AssignedIP(interfaceName string, family uint8) (ip netip.Addr, err error)
 }
 
 type PortAllower interface {

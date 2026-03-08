@@ -22,9 +22,7 @@ func (c *Config) SetEnabled(ctx context.Context, enabled bool) (err error) {
 
 	if !enabled {
 		c.logger.Info("disabling...")
-		if err = c.disable(ctx); err != nil {
-			return fmt.Errorf("disabling firewall: %w", err)
-		}
+		c.restore(ctx)
 		c.enabled = false
 		c.logger.Info("disabled successfully")
 		return nil
@@ -42,38 +40,36 @@ func (c *Config) SetEnabled(ctx context.Context, enabled bool) (err error) {
 }
 
 func (c *Config) enable(ctx context.Context) (err error) {
-	touched := false
-	if err = c.setIPv4AllPolicies(ctx, "DROP"); err != nil {
+	c.restore, err = c.impl.SaveAndRestore(ctx)
+	if err != nil {
+		return fmt.Errorf("saving firewall rules: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			c.restore(context.Background())
+		}
+	}()
+
+	if err = c.impl.SetIPv4AllPolicies(ctx, "DROP"); err != nil {
 		return err
 	}
-	touched = true
 
-	if err = c.setIPv6AllPolicies(ctx, "DROP"); err != nil {
+	if err = c.impl.SetIPv6AllPolicies(ctx, "DROP"); err != nil {
+		return err
+	}
+
+	// Loopback traffic
+	if err = c.impl.AcceptInputThroughInterface(ctx, "lo"); err != nil {
 		return err
 	}
 
 	const remove = false
-
-	defer func() {
-		if touched && err != nil {
-			c.fallbackToDisabled(ctx)
-		}
-	}()
-
-	// Clear any previously applied post-rules
-	if err = c.clearAppliedPostRules(ctx); err != nil {
-		c.logger.Warn("failed to clear previous post-rules: " + err.Error())
-	}
-
-	// Loopback traffic
-	if err = c.acceptInputThroughInterface(ctx, "lo", remove); err != nil {
-		return err
-	}
-	if err = c.acceptOutputThroughInterface(ctx, "lo", remove); err != nil {
+	if err = c.impl.AcceptOutputThroughInterface(ctx, "lo", remove); err != nil {
 		return err
 	}
 
-	if err = c.acceptEstablishedRelatedTraffic(ctx, remove); err != nil {
+	if err = c.impl.AcceptEstablishedRelatedTraffic(ctx); err != nil {
 		return err
 	}
 
@@ -83,7 +79,9 @@ func (c *Config) enable(ctx context.Context) (err error) {
 
 	localInterfaces := make(map[string]struct{}, len(c.localNetworks))
 	for _, network := range c.localNetworks {
-		if err := c.acceptOutputFromIPToSubnet(ctx, network.InterfaceName, network.IP, network.IPNet, remove); err != nil {
+		err = c.impl.AcceptOutputFromIPToSubnet(ctx,
+			network.InterfaceName, network.IP, network.IPNet, remove)
+		if err != nil {
 			return err
 		}
 
@@ -92,7 +90,7 @@ func (c *Config) enable(ctx context.Context) (err error) {
 			continue
 		}
 		localInterfaces[network.InterfaceName] = struct{}{}
-		err = c.acceptIpv6MulticastOutput(ctx, network.InterfaceName, remove)
+		err = c.impl.AcceptIpv6MulticastOutput(ctx, network.InterfaceName)
 		if err != nil {
 			return fmt.Errorf("accepting IPv6 multicast output: %w", err)
 		}
@@ -105,7 +103,7 @@ func (c *Config) enable(ctx context.Context) (err error) {
 	// Allows packets from any IP address to go through eth0 / local network
 	// to reach Gluetun.
 	for _, network := range c.localNetworks {
-		if err := c.acceptInputToSubnet(ctx, network.InterfaceName, network.IPNet, remove); err != nil {
+		if err := c.impl.AcceptInputToSubnet(ctx, network.InterfaceName, network.IPNet); err != nil {
 			return err
 		}
 	}
@@ -114,13 +112,12 @@ func (c *Config) enable(ctx context.Context) (err error) {
 		return err
 	}
 
-	err = c.redirectPorts(ctx, remove)
+	err = c.redirectPorts(ctx)
 	if err != nil {
 		return fmt.Errorf("redirecting ports: %w", err)
 	}
 
-	// Apply post-rules only once at the end
-	if err := c.runUserPostRules(ctx, c.customRulesPath, remove); err != nil {
+	if err := c.impl.RunUserPostRules(ctx, c.customRulesPath); err != nil {
 		return fmt.Errorf("running user defined post firewall rules: %w", err)
 	}
 
@@ -175,7 +172,7 @@ func (c *Config) allowVPNIP(ctx context.Context) (err error) {
 			continue
 		}
 		interfacesSeen[defaultRoute.NetInterface] = struct{}{}
-		err = c.acceptOutputTrafficToVPN(ctx, defaultRoute.NetInterface, c.vpnConnection, remove)
+		err = c.impl.AcceptOutputTrafficToVPN(ctx, defaultRoute.NetInterface, c.vpnConnection, remove)
 		if err != nil {
 			return fmt.Errorf("accepting output traffic through VPN: %w", err)
 		}
@@ -197,7 +194,7 @@ func (c *Config) allowOutboundSubnets(ctx context.Context) (err error) {
 			firewallUpdated = true
 
 			const remove = false
-			err := c.acceptOutputFromIPToSubnet(ctx, defaultRoute.NetInterface,
+			err := c.impl.AcceptOutputFromIPToSubnet(ctx, defaultRoute.NetInterface,
 				defaultRoute.AssignedIP, subnet, remove)
 			if err != nil {
 				return err
@@ -215,7 +212,7 @@ func (c *Config) allowInputPorts(ctx context.Context) (err error) {
 	for port, netInterfaces := range c.allowedInputPorts {
 		for netInterface := range netInterfaces {
 			const remove = false
-			err = c.acceptInputToPort(ctx, netInterface, port, remove)
+			err = c.impl.AcceptInputToPort(ctx, netInterface, port, remove)
 			if err != nil {
 				return fmt.Errorf("accepting input port %d on interface %s: %w",
 					port, netInterface, err)
@@ -225,9 +222,10 @@ func (c *Config) allowInputPorts(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *Config) redirectPorts(ctx context.Context, remove bool) (err error) {
+func (c *Config) redirectPorts(ctx context.Context) (err error) {
 	for _, portRedirection := range c.portRedirections {
-		err = c.redirectPort(ctx, portRedirection.interfaceName, portRedirection.sourcePort,
+		const remove = false
+		err = c.impl.RedirectPort(ctx, portRedirection.interfaceName, portRedirection.sourcePort,
 			portRedirection.destinationPort, remove)
 		if err != nil {
 			return err
