@@ -124,41 +124,6 @@ func (c *Config) enable(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *Config) disable(ctx context.Context) (err error) {
-	// Clear applied post-rules when disabling
-	if err = c.clearAppliedPostRules(ctx); err != nil {
-		c.logger.Warn("failed to clear post-rules during disable: " + err.Error())
-	}
-
-	if err = c.clearAllRules(ctx); err != nil {
-		return fmt.Errorf("clearing all rules: %w", err)
-	}
-	if err = c.setIPv4AllPolicies(ctx, "ACCEPT"); err != nil {
-		return fmt.Errorf("setting ipv4 policies: %w", err)
-	}
-	if err = c.setIPv6AllPolicies(ctx, "ACCEPT"); err != nil {
-		return fmt.Errorf("setting ipv6 policies: %w", err)
-	}
-
-	const remove = true
-	err = c.redirectPorts(ctx, remove)
-	if err != nil {
-		return fmt.Errorf("removing port redirections: %w", err)
-	}
-
-	return nil
-}
-
-// To use in defered call when enabling the firewall.
-func (c *Config) fallbackToDisabled(ctx context.Context) {
-	if ctx.Err() != nil {
-		return
-	}
-	if err := c.disable(ctx); err != nil {
-		c.logger.Error("failed reversing firewall changes: " + err.Error())
-	}
-}
-
 func (c *Config) allowVPNIP(ctx context.Context) (err error) {
 	if !c.vpnConnection.IP.IsValid() {
 		return nil

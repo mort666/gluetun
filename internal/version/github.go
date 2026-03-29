@@ -34,7 +34,7 @@ func getGithubReleases(ctx context.Context, client *http.Client) (releases []git
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	const url = "https://api.github.com/repos/qdm12/gluetun/releases"
+	const url = "https://api.github.com/repos/mort666/gluetun/releases"
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

@@ -18,6 +18,15 @@ import (
 	_ "github.com/breml/rootcerts"
 	"github.com/qdm12/dns/v2/pkg/doh"
 	dnsprovider "github.com/qdm12/dns/v2/pkg/provider"
+	"github.com/qdm12/gosettings/reader"
+	"github.com/qdm12/gosettings/reader/sources/env"
+	"github.com/qdm12/goshutdown"
+	"github.com/qdm12/goshutdown/goroutine"
+	"github.com/qdm12/goshutdown/group"
+	"github.com/qdm12/goshutdown/order"
+	"github.com/qdm12/gosplash"
+	"github.com/qdm12/log"
+
 	"github.com/qdm12/gluetun/internal/alpine"
 	"github.com/qdm12/gluetun/internal/boringpoll"
 	"github.com/qdm12/gluetun/internal/cli"
@@ -48,14 +57,6 @@ import (
 	"github.com/qdm12/gluetun/internal/updater/resolver"
 	"github.com/qdm12/gluetun/internal/updater/unzip"
 	"github.com/qdm12/gluetun/internal/vpn"
-	"github.com/qdm12/gosettings/reader"
-	"github.com/qdm12/gosettings/reader/sources/env"
-	"github.com/qdm12/goshutdown"
-	"github.com/qdm12/goshutdown/goroutine"
-	"github.com/qdm12/goshutdown/group"
-	"github.com/qdm12/goshutdown/order"
-	"github.com/qdm12/gosplash"
-	"github.com/qdm12/log"
 )
 
 //nolint:gochecknoglobals
@@ -210,9 +211,6 @@ func _main(ctx context.Context, buildInfo models.BuildInformation,
 	netLinker.PatchLoggerLevel(logLevel)
 
 	routingLogger := logger.New(log.SetComponent("routing"))
-	if *allSettings.Firewall.Debug { // To remove in v4
-		routingLogger.Patch(log.SetLevel(log.LevelDebug))
-	}
 	routingConf := routing.New(netLinker, routingLogger)
 
 	defaultRoutes, err := routingConf.DefaultRoutes()
@@ -225,11 +223,11 @@ func _main(ctx context.Context, buildInfo models.BuildInformation,
 		return err
 	}
 
+	iptablesLogLevel, _ := log.ParseLevel(allSettings.Firewall.Iptables.LogLevel)
+	iptablesLogger := logger.New(log.SetComponent("iptables"), log.SetLevel(iptablesLogLevel))
+
 	firewallLogger := logger.New(log.SetComponent("firewall"))
-	if *allSettings.Firewall.Debug { // To remove in v4
-		firewallLogger.Patch(log.SetLevel(log.LevelDebug))
-	}
-	firewallConf, err := firewall.NewConfig(ctx, firewallLogger, cmder,
+	firewallConf, err := firewall.NewConfig(ctx, firewallLogger, iptablesLogger, cmder,
 		defaultRoutes, localNetworks)
 	if err != nil {
 		return err
@@ -634,6 +632,8 @@ type RunStarter interface {
 	Run(cmd *exec.Cmd) (output string, err error)
 	Start(cmd *exec.Cmd) (stdoutLines, stderrLines <-chan string,
 		waitError <-chan error, err error)
+	RunAndLog(ctx context.Context, commandString string,
+		logger command.Logger) (err error)
 }
 
 const gluetunLogo = `                         @@@

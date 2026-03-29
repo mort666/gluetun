@@ -17,7 +17,7 @@ import (
 
 	srp "github.com/ProtonMail/go-srp"
 	"github.com/mort666/go-proton-api"
-	common "rtlabs.cloud/protonsession"
+	common "rtlabs.tech/protonsession"
 
 	"github.com/qdm12/gluetun/internal/constants"
 )
@@ -159,9 +159,7 @@ func (c *apiClient) getSessionID(ctx context.Context) (sessionID string, err err
 
 var ErrDataFieldMissing = errors.New("data field missing in response")
 
-func (c *apiClient) getUnauthSession(ctx context.Context, sessionID string) (
-	tokenType, accessToken, refreshToken, uid string, err error,
-) {
+func (c *apiClient) getUnauthSession(ctx context.Context, sessionID string) (tokenType, accessToken, refreshToken, uid string, err error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.apiURLBase+"/auth/v4/sessions", nil)
 	if err != nil {
 		return "", "", "", "", fmt.Errorf("creating request: %w", err)
@@ -584,6 +582,28 @@ type physicalServer struct {
 	X25519PublicKey string     `json:"X25519PublicKey"`
 }
 
+func randomUserAgent() string {
+	var seed [32]byte
+	_, _ = crand.Read(seed[:])
+	generator := rand.NewChaCha8(seed)
+
+	// Pick a random user agent from this list. Because I'm not going to tell
+	// Proton shit on where all these funny requests are coming from, given their
+	// unhelpfulness in figuring out their authentication flow.
+	userAgents := [...]string{
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+		"Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+	}
+	userAgent := userAgents[generator.Uint64()%uint64(len(userAgents))]
+
+	return userAgent
+}
+
+
 func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, password string) (
 	data apiData, err error,
 ) {
@@ -597,7 +617,11 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, p
 
 	protonOptions := []proton.Option{
 		proton.WithAppVersion(c.appVersion),
+		proton.WithHostURL("https://account.proton.me/api"),
+		proton.WithUserAgent(randomUserAgent()),
+		proton.WithDebug(true),
 	}
+
 
 	sessionConfig, err := sessionStore.Load()
 	if err != nil {
@@ -607,10 +631,10 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, p
 				return data, err
 			}
 
-			keypass, err = common.SaltKeyPass(ctx, pmSession.Client, []byte(password))
-			if err != nil {
-				return data, err
-			}
+			// keypass, err = common.SaltKeyPass(ctx, pmSession.Client, []byte(password))
+			// if err != nil {
+			// 	return data, err
+			// }
 		} else {
 			return data, err
 		}
@@ -630,7 +654,7 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, p
 	// Old Logicals API endpoint: https://api.protonmail.ch/vpn/logicals
 	// New Logicals API endpoint: https://account.proton.me/api/vpn/logicals
 
-	const url = "https://account.proton.me/api/vpn/logicals"
+	const url = "https://account.proton.me/api/vpn/v1/logicals?WithIpV6=1"
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

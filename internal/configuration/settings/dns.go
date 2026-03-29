@@ -44,9 +44,10 @@ type DNS struct {
 	Blacklist DNSBlacklist
 	// UpstreamPlainAddresses are the upstream plaintext DNS resolver
 	// addresses to use by the built-in DNS server forwarder.
-	// Note, if the upstream type is [dnsUpstreamTypePlain] these are merged
-	// together with provider names set in the Providers field.
-	// If this field is set, the Providers field will default to the empty slice.
+	// Note, if the upstream type is [dnsUpstreamTypePlain] and this field is set,
+	// the Providers field will default to the empty slice. If the Providers field
+	// is set by the user, then the content of this field will be merged together
+	// with the plain addresses of the providers set in the Providers field.
 	UpstreamPlainAddresses []netip.AddrPort
 }
 
@@ -69,19 +70,27 @@ func (d DNS) validate() (err error) {
 	}
 
 	providers := provider.NewProviders()
+	selectedHasPlainIPv4, selectedHasPlainIPv6 := false, false
 	for _, providerName := range d.Providers {
-		_, err := providers.Get(providerName)
+		provider, err := providers.Get(providerName)
 		if err != nil {
 			return err
+		}
+		if !selectedHasPlainIPv4 && len(provider.Plain.IPv4) > 0 {
+			selectedHasPlainIPv4 = true
+		}
+		if !selectedHasPlainIPv6 && len(provider.Plain.IPv6) > 0 {
+			selectedHasPlainIPv6 = true
 		}
 	}
 
 	if d.UpstreamType == DNSUpstreamTypePlain {
-		if *d.IPv6 && !slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
-			return addrPort.Addr().Is6()
-		}) {
+		if *d.IPv6 && !selectedHasPlainIPv6 &&
+			!slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
+				return addrPort.Addr().Is6()
+			}) {
 			return fmt.Errorf("%w: in %d addresses", ErrDNSUpstreamPlainNoIPv6, len(d.UpstreamPlainAddresses))
-		} else if !slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
+		} else if !selectedHasPlainIPv4 && !slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
 			return addrPort.Addr().Is4()
 		}) {
 			return fmt.Errorf("%w: in %d addresses", ErrDNSUpstreamPlainNoIPv4, len(d.UpstreamPlainAddresses))
@@ -125,13 +134,15 @@ func (d *DNS) setDefaults() {
 	d.UpstreamType = gosettings.DefaultComparable(d.UpstreamType, DNSUpstreamTypeDot)
 	const defaultUpdatePeriod = 24 * time.Hour
 	d.UpdatePeriod = gosettings.DefaultPointer(d.UpdatePeriod, defaultUpdatePeriod)
-	d.Providers = gosettings.DefaultSlice(d.Providers, []string{
-		provider.Cloudflare().Name,
-	})
+	d.UpstreamPlainAddresses = gosettings.DefaultSlice(d.UpstreamPlainAddresses, []netip.AddrPort{})
+	defaultProviders := defaultDNSProviders()
+	if d.UpstreamType == DNSUpstreamTypePlain && len(d.UpstreamPlainAddresses) == 0 {
+		defaultProviders = []string{}
+	}
+	d.Providers = gosettings.DefaultSlice(d.Providers, defaultProviders)
 	d.Caching = gosettings.DefaultPointer(d.Caching, true)
 	d.IPv6 = gosettings.DefaultPointer(d.IPv6, false)
 	d.Blacklist.setDefaults()
-	d.UpstreamPlainAddresses = gosettings.DefaultSlice(d.UpstreamPlainAddresses, []netip.AddrPort{})
 }
 
 func defaultDNSProviders() []string {
