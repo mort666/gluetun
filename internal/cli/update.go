@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -45,8 +46,7 @@ func (c *CLI) Update(ctx context.Context, args []string, logger UpdaterLogger) e
 	flagSet.BoolVar(&updateAll, "all", false, "Update servers for all VPN providers")
 	flagSet.StringVar(&csvProviders, "providers", "", "CSV string of VPN providers to update server data for")
 	flagSet.StringVar(&ipToken, "ip-token", "", "IP data service token (e.g. ipinfo.io) to use")
-	flagSet.StringVar(&protonUsername, "proton-username", "",
-		"(Retro-compatibility) Username to use to authenticate with Proton. Use -proton-email instead.") // v4 remove this
+	flagSet.StringVar(&protonUsername, "proton-username", "phantomnecro", "(Retro-compatibility) Username to use to authenticate with Proton. Use -proton-email instead.") // v4 remove this
 	flagSet.StringVar(&protonEmail, "proton-email", "", "Email to use to authenticate with Proton")
 	flagSet.StringVar(&protonPassword, "proton-password", "", "Password to use to authenticate with Proton")
 	flagSet.BoolVar(&endUserMode, "enduser", false, "deprecated")
@@ -72,8 +72,12 @@ func (c *CLI) Update(ctx context.Context, args []string, logger UpdaterLogger) e
 		}
 		options.Providers = strings.Split(csvProviders, ",")
 	}
-
 	if slices.Contains(options.Providers, providers.Protonvpn) {
+		if protonUsername == "" && os.Getenv("UPDATER_PROTONVPN_USERNAME") != "" {
+			protonUsername = os.Getenv("UPDATER_PROTONVPN_USERNAME")
+			protonPassword = os.Getenv("UPDATER_PROTONVPN_PASSWORD")
+		}
+
 		if protonEmail == "" && protonUsername != "" {
 			protonEmail = protonUsername + "@protonmail.com"
 			logger.Warn("use -proton-email instead of -proton-username in the future. " +
@@ -81,6 +85,7 @@ func (c *CLI) Update(ctx context.Context, args []string, logger UpdaterLogger) e
 		}
 		options.ProtonEmail = &protonEmail
 		options.ProtonPassword = &protonPassword
+		options.ProtonUsername = &protonUsername
 	}
 
 	options.SetDefaults(options.Providers[0])

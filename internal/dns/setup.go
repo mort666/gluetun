@@ -3,7 +3,6 @@ package dns
 import (
 	"context"
 	"fmt"
-	"net/netip"
 
 	"github.com/qdm12/dns/v2/pkg/middlewares/filter/update"
 	"github.com/qdm12/dns/v2/pkg/nameserver"

@@ -1,6 +1,6 @@
 module github.com/qdm12/gluetun
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/ProtonMail/go-srp v0.0.7
@@ -38,10 +38,17 @@ require (
 
 require (
 	github.com/ProtonMail/bcrypt v0.0.0-20211005172633-e235017c1baf // indirect
-	github.com/ProtonMail/go-crypto v1.3.0-proton // indirect
+	github.com/ProtonMail/gluon v0.17.0 // indirect
+	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
+	github.com/ProtonMail/gopenpgp/v2 v2.10.0 // indirect
+	github.com/PuerkitoBio/goquery v1.12.0 // indirect
+	github.com/adrg/xdg v0.5.3 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bradenaw/juniper v0.15.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cronokirby/saferith v0.33.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

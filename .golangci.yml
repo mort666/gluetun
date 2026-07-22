@@ -114,7 +114,7 @@ linters:
     - gosec
     - gosmopolitan
     - grouper
-    - importas
+    - imports
     - interfacebloat
     - intrange
     - ireturn

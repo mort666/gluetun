@@ -1,6 +1,8 @@
-ARG ALPINE_VERSION=3.23
-ARG GO_ALPINE_VERSION=3.23
-ARG GO_VERSION=1.25
+# syntax=docker/dockerfile-upstream:master
+
+ARG ALPINE_VERSION=3.22
+ARG GO_ALPINE_VERSION=3.22
+ARG GO_VERSION=1.26
 ARG XCPUTRANSLATE_VERSION=v0.9.0
 ARG GOLANGCI_LINT_VERSION=v2.4.0
 ARG MOCKGEN_VERSION=v0.6.0
@@ -68,15 +70,15 @@ ARG VERSION=unknown
 ARG CREATED="an unknown date"
 ARG COMMIT=unknown
 LABEL \
-    org.opencontainers.image.authors="quentin.mcgaw@gmail.com" \
+    org.opencontainers.image.authors="quentin.mcgaw@gmail.com,mort666@virus.org" \
     org.opencontainers.image.created=$CREATED \
     org.opencontainers.image.version=$VERSION \
     org.opencontainers.image.revision=$COMMIT \
-    org.opencontainers.image.url="https://github.com/passteque/gluetun" \
-    org.opencontainers.image.documentation="https://github.com/passteque/gluetun" \
-    org.opencontainers.image.source="https://github.com/passteque/gluetun" \
-    org.opencontainers.image.title="VPN swiss-knife like client for multiple VPN providers" \
-    org.opencontainers.image.description="VPN swiss-knife like client to tunnel to multiple VPN servers using OpenVPN, IPtables, DNS over TLS, Shadowsocks, an HTTP proxy and Alpine Linux"
+    org.opencontainers.image.url="https://github.com/mort666/gluetun" \
+    org.opencontainers.image.documentation="https://github.com/mort666/gluetun" \
+    org.opencontainers.image.source="https://github.com/mort666/gluetun" \
+    org.opencontainers.image.title="VPN swiss-knife like client for multiple VPN providers (modded release)" \
+    org.opencontainers.image.description="VPN swiss-knife like client to tunnel to multiple VPN servers using OpenVPN, IPtables, DNS over TLS, Shadowsocks, an HTTP proxy and Alpine Linux."
 ENV VPN_SERVICE_PROVIDER=pia \
     VPN_TYPE=openvpn \
     # Common VPN options
@@ -209,7 +211,6 @@ ENV VPN_SERVICE_PROVIDER=pia \
     HEALTH_SMALL_CHECK_TYPE=icmp \
     HEALTH_RESTART_VPN=on \
     # DNS
-    DNS_SERVER=on \
     DNS_UPSTREAM_RESOLVER_TYPE=DoT \
     # Note: DNS_UPSTREAM_RESOLVERS defaults to cloudflare in code if DNS_UPSTREAM_PLAIN_ADDRESSES is empty
     DNS_UPSTREAM_RESOLVERS= \
@@ -256,6 +257,7 @@ ENV VPN_SERVICE_PROVIDER=pia \
     UPDATER_PREFER_DIRECT_DOWNLOAD=no \
     UPDATER_PROTONVPN_EMAIL= \
     UPDATER_PROTONVPN_PASSWORD= \
+    UPDATER_PROTONVPN_USERNAME= \
     # Public IP
     PUBLICIP_FILE="/tmp/gluetun/ip" \
     PUBLICIP_ENABLED=on \
@@ -271,6 +273,7 @@ ENV VPN_SERVICE_PROVIDER=pia \
     PPROF_HTTP_SERVER_ADDRESS=":6060" \
     # Extras
     VERSION_INFORMATION=on \
+    BORINGPOLL_GLUETUNCOM=off \
     TZ= \
     PUID=1000 \
     PGID=1000

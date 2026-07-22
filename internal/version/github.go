@@ -27,11 +27,11 @@ type githubCommit struct {
 func getGithubReleases(ctx context.Context, client *http.Client) (releases []githubRelease, err error) {
 	// Define a timeout since the default client has a large timeout and we don't
 	// want to wait too long.
-	const timeout = 15 * time.Second
+	const timeout = 5 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	const url = "https://api.github.com/repos/passteque/gluetun/releases"
+	const url = "https://api.github.com/repos/mort666/gluetun/releases"
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -58,11 +58,11 @@ func getGithubReleases(ctx context.Context, client *http.Client) (releases []git
 func getGithubCommits(ctx context.Context, client *http.Client) (commits []githubCommit, err error) {
 	// Define a timeout since the default client has a large timeout and we don't
 	// want to wait too long.
-	const timeout = 15 * time.Second
+	const timeout = 5 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	const url = "https://api.github.com/repos/passteque/gluetun/commits"
+	const url = "https://api.github.com/repos/mort666/gluetun/commits"
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

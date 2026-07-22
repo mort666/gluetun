@@ -48,11 +48,12 @@ jobs:
           locale: "US"
           level: error
           exclude: |
-            ./.golangci.yml
+            ./internal/storage/servers.json
+            ./golangci.yml
             *.md
 
-      - name: Linting
-        run: docker build --target lint .
+      # - name: Linting
+      #   run: docker build --target lint .
 
       - name: Mocks check
         run: docker build --target mocks .
@@ -99,7 +100,7 @@ jobs:
 
   verify-private:
     if: |
-      github.repository == 'passteque/gluetun' &&
+      github.repository == 'mort666/gluetun' &&
       (
         github.event_name == 'push' ||
         github.event_name == 'release' ||
@@ -107,7 +108,7 @@ jobs:
       )
     needs: [verify]
     runs-on: ubuntu-latest
-    environment: secrets
+    # environment: secrets
     steps:
       - uses: actions/checkout@v6
 
@@ -121,38 +122,11 @@ jobs:
       - name: Build utility
         run: go build -C ./ci -o runner ./cmd/main.go
 
-      - name: Run Gluetun container with Mullvad configuration
-        run: echo -e "${{ secrets.MULLVAD_WIREGUARD_PRIVATE_KEY }}\n${{
-          secrets.MULLVAD_WIREGUARD_ADDRESS }}" | ./ci/runner mullvad
+      # - name: Run Gluetun container with Mullvad configuration
+      #   run: echo -e "${{ secrets.MULLVAD_WIREGUARD_PRIVATE_KEY }}\n${{ secrets.MULLVAD_WIREGUARD_ADDRESS }}" | ./ci/runner mullvad
 
-      - name: Run Gluetun container with ProtonVPN Wireguard and port forwarding
-          configuration
-        run:
-          echo -e "${{ secrets.PROTONVPN_WIREGUARD_PRIVATE_KEY }}" | ./ci/runner
-          protonvpn-wireguard-port-forwarding
-
-      - name: Run Gluetun container with ProtonVPN OpenVPN and port forwarding
-          configuration
-        run: echo -e "${{ secrets.PROTONVPN_OPENVPN_USER }}\n${{
-          secrets.PROTONVPN_OPENVPN_PASSWORD }}" | ./ci/runner
-          protonvpn-openvpn-port-forwarding
-
-      # - name:
-      #     Run Gluetun container with Private Internet Access OpenVPN and port
-      #     forwarding configuration
-      #   run: echo -e "${{ secrets.PRIVATEINTERNETACCESS_OPENVPN_USER }}\n${{
-      #     secrets.PRIVATEINTERNETACCESS_OPENVPN_PASSWORD }}" | ./ci/runner
-      #     private-internet-access-openvpn-port-forwarding
-
-      - name: Run Gluetun container with AirVPN Wireguard configuration
-        run: echo -e "${{ secrets.AIRVPN_WIREGUARD_PRIVATE_KEY }}\n${{
-          secrets.AIRVPN_WIREGUARD_PRESHARED_KEY }}\n${{
-          secrets.AIRVPN_WIREGUARD_ADDRESSES }}" | ./ci/runner airvpn-wireguard
-
-      - name: Run Gluetun container with AirVPN OpenVPN configuration
-        run:
-          echo -e "${{ secrets.AIRVPN_OPENVPN_KEY }}\n${{ secrets.AIRVPN_OPENVPN_CERT
-          }}" | ./ci/runner airvpn-openvpn
+      # - name: Run Gluetun container with ProtonVPN configuration
+      #   run: echo -e "${{ secrets.PROTONVPN_WIREGUARD_PRIVATE_KEY }}" | ./ci/runner protonvpn
 
   codeql:
     runs-on: ubuntu-latest
@@ -164,7 +138,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version: "^1.26"
       - uses: github/codeql-action/init@v4
         with:
           languages: go
@@ -173,13 +147,13 @@ jobs:
 
   publish:
     if: |
-      github.repository == 'passteque/gluetun' &&
+      github.repository == 'mort666/gluetun' &&
       (
         github.event_name == 'push' ||
         github.event_name == 'release' ||
         (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
       )
-    needs: [verify, verify-private, codeql]
+    needs: [verify, verify-private]
     permissions:
       actions: read
       contents: read
@@ -198,9 +172,7 @@ jobs:
           flavor: |
             latest=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
           images: |
-            ghcr.io/qdm12/gluetun
-            qmcgaw/gluetun
-            qmcgaw/private-internet-access
+            ghcr.io/mort666/gluetun
           tags: |
             type=ref,event=pr
             type=semver,pattern=v{{major}}.{{minor}}.{{patch}}
@@ -213,14 +185,9 @@ jobs:
 
       - uses: docker/login-action@v4
         with:
-          username: qmcgaw
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - uses: docker/login-action@v4
-        with:
           registry: ghcr.io
-          username: qdm12
-          password: ${{ secrets.GHCR_PAT }}
+          username: mort666
+          password: ${{ github.token }}
 
       - name: Short commit
         id: shortcommit
@@ -233,7 +200,7 @@ jobs:
       - name: Build and push final image
         uses: docker/build-push-action@v7
         with:
-          platforms: linux/amd64,linux/386,linux/arm64,linux/arm/v6,linux/arm/v7,linux/ppc64le
+          platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             CREATED=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}

@@ -16,6 +16,10 @@ import (
 	"strings"
 
 	srp "github.com/ProtonMail/go-srp"
+	"github.com/mort666/go-proton-api"
+	common "rtlabs.tech/protonsession"
+
+	"github.com/qdm12/gluetun/internal/constants"
 )
 
 // apiClient is a minimal Proton v4 API client which can handle all the
@@ -149,9 +153,9 @@ func (c *apiClient) getSessionID(ctx context.Context) (sessionID string, err err
 	return "", errors.New("session ID not found in cookies")
 }
 
-func (c *apiClient) getUnauthSession(ctx context.Context, sessionID string) (
-	tokenType, accessToken, refreshToken, uid string, err error,
-) {
+var ErrDataFieldMissing = errors.New("data field missing in response")
+
+func (c *apiClient) getUnauthSession(ctx context.Context, sessionID string) (tokenType, accessToken, refreshToken, uid string, err error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.apiURLBase+"/auth/v4/sessions", nil)
 	if err != nil {
 		return "", "", "", "", fmt.Errorf("creating request: %w", err)
@@ -565,15 +569,95 @@ type physicalServer struct {
 	X25519PublicKey string     `json:"X25519PublicKey"`
 }
 
-func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
+func randomUserAgent() string {
+	var seed [32]byte
+	_, _ = crand.Read(seed[:])
+	generator := rand.NewChaCha8(seed)
+
+	// Pick a random user agent from this list. Because I'm not going to tell
+	// Proton shit on where all these funny requests are coming from, given their
+	// unhelpfulness in figuring out their authentication flow.
+	userAgents := [...]string{
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+		"Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+	}
+	userAgent := userAgents[generator.Uint64()%uint64(len(userAgents))]
+
+	return userAgent
+}
+
+
+func (c *apiClient) fetchServers(ctx context.Context, cookie cookie, username, password string) (
 	data apiData, err error,
 ) {
-	const url = "https://account.proton.me/api/vpn/logicals"
+	var pmSession *common.Session
+	var keypass []byte
+
+	const TokenType = "Bearer"
+
+	sessionStore := common.NewFileStore(constants.ServersDataPath+"/proton-sessions.db", "default")
+	sessionStore.CacheDir = false
+
+	protonOptions := []proton.Option{
+		proton.WithAppVersion(c.appVersion),
+		proton.WithHostURL("https://account.proton.me/api"),
+		proton.WithUserAgent(randomUserAgent()),
+		proton.WithDebug(true),
+	}
+
+
+	sessionConfig, err := sessionStore.Load()
+	if err != nil {
+		if err == common.ErrKeyNotFound {
+			pmSession, err = common.SessionFromLogin(ctx, protonOptions, username, password)
+			if err != nil {
+				return data, err
+			}
+
+			// keypass, err = common.SaltKeyPass(ctx, pmSession.Client, []byte(password))
+			// if err != nil {
+			// 	return data, err
+			// }
+		} else {
+			return data, err
+		}
+	} else {
+		sessionCreds := &common.SessionCredentials{
+			UID:          sessionConfig.UID,
+			AccessToken:  sessionConfig.AccessToken,
+			RefreshToken: sessionConfig.RefreshToken,
+		}
+
+		pmSession, err = common.SessionFromRefresh(ctx, protonOptions, sessionCreds)
+		if err != nil {
+			return data, err
+		}
+	}
+
+	// Old Logicals API endpoint: https://api.protonmail.ch/vpn/logicals
+	// New Logicals API endpoint: https://account.proton.me/api/vpn/logicals
+
+	const url = "https://account.proton.me/api/vpn/v1/logicals?WithIpV6=1"
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return data, err
 	}
-	c.setHeaders(request, cookie)
+	// c.setHeaders(request, cookie)
+
+	// Setup the auth token from the newly obtained session, the logicals API end
+	// point requires in addition to the auth token two custom header entries
+	// one specifying the app that made the request and the proton uid attached
+	// to the session. If either are missing a HTTP 401 is returned
+	request.Header.Set("Authorization", TokenType+" "+pmSession.Auth.AccessToken)
+	request.Header.Set("User-Agent", c.userAgent)
+	request.Header.Set("x-pm-uid", pmSession.Auth.UID)
+	request.Header.Set("x-pm-appversion", c.appVersion)
+	request.Header.Set("x-pm-locale", "en_US")
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
@@ -589,6 +673,17 @@ func (c *apiClient) fetchServers(ctx context.Context, cookie cookie) (
 	decoder := json.NewDecoder(response.Body)
 	if err := decoder.Decode(&data); err != nil {
 		return data, fmt.Errorf("decoding response body: %w", err)
+	}
+
+	config := common.SessionConfig{
+		UID:           pmSession.Auth.UID,
+		RefreshToken:  pmSession.Auth.RefreshToken,
+		AccessToken:   pmSession.Auth.AccessToken,
+		SaltedKeyPass: common.Base64Encode(keypass),
+	}
+
+	if err := sessionStore.Save(&config); err != nil {
+		return data, nil
 	}
 
 	return data, nil
@@ -614,6 +709,5 @@ func buildError(httpCode int, body []byte) error {
 		details = append(details, fmt.Sprintf("%s: %s", key, value))
 	}
 
-	return fmt.Errorf("HTTP status code not OK: %s: %s (code %d with details: %s)",
-		prettyCode, *protonError.Error, *protonError.Code, strings.Join(details, ", "))
+	return fmt.Errorf("%w: %s: %s (code %d with details: %s)", ErrHTTPStatusCodeNotOK, prettyCode, *protonError.Error, *protonError.Code, strings.Join(details, ", "))
 }

@@ -16,13 +16,14 @@ type Provider struct {
 	internalToExternalPorts map[uint16]uint16
 }
 
-func New(storage common.Storage, client *http.Client, updaterWarner common.Warner,
-	email, password string,
+func New(storage common.Storage, randSource rand.Source,
+	client *http.Client, updaterWarner common.Warner,
+	email, password, username string,
 ) *Provider {
 	return &Provider{
 		storage:    storage,
-		connPicker: utils.NewConnectionPicker(),
-		Fetcher:    updater.New(client, updaterWarner, email, password),
+		randSource: randSource,
+		Fetcher:    updater.New(client, updaterWarner, email, password, username),
 	}
 }
 

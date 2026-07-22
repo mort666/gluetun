@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qdm12/gluetun/internal/constants/providers"
 	"github.com/qdm12/gosettings"
 	"github.com/qdm12/gosettings/reader"
 	"github.com/qdm12/gosettings/validate"
 	"github.com/qdm12/gotree"
+
+	"github.com/qdm12/gluetun/internal/constants/providers"
 )
 
 // Updater contains settings to configure the VPN
@@ -36,6 +37,8 @@ type Updater struct {
 	ProtonEmail *string
 	// ProtonPassword is the password to authenticate with the Proton API.
 	ProtonPassword *string
+	// ProtonUsername is the email to authenticate with the Proton API.
+	ProtonUsername *string
 }
 
 func (u Updater) Validate() (err error) {
@@ -94,6 +97,7 @@ func (u *Updater) overrideWith(other Updater) {
 	u.PreferDirectDownload = gosettings.OverrideWithPointer(u.PreferDirectDownload, other.PreferDirectDownload)
 	u.ProtonEmail = gosettings.OverrideWithPointer(u.ProtonEmail, other.ProtonEmail)
 	u.ProtonPassword = gosettings.OverrideWithPointer(u.ProtonPassword, other.ProtonPassword)
+	u.ProtonUsername = gosettings.OverrideWithPointer(u.ProtonUsername, other.ProtonUsername)
 }
 
 func (u *Updater) SetDefaults(vpnProvider string) {
@@ -112,6 +116,7 @@ func (u *Updater) SetDefaults(vpnProvider string) {
 	u.PreferDirectDownload = gosettings.DefaultPointer(u.PreferDirectDownload, false)
 	u.ProtonEmail = gosettings.DefaultPointer(u.ProtonEmail, "")
 	u.ProtonPassword = gosettings.DefaultPointer(u.ProtonPassword, "")
+	u.ProtonUsername = gosettings.DefaultPointer(u.ProtonUsername, "")
 }
 
 func (u Updater) String() string {
@@ -130,6 +135,7 @@ func (u Updater) toLinesNode() (node *gotree.Node) {
 	node.Appendf("Prefer direct download: %s", gosettings.BoolToYesNo(u.PreferDirectDownload))
 	if slices.Contains(u.Providers, providers.Protonvpn) {
 		node.Appendf("Proton API email: %s", *u.ProtonEmail)
+		node.Appendf("Proton API Username: %s", *u.ProtonUsername)
 		node.Appendf("Proton API password: %s", gosettings.ObfuscateKey(*u.ProtonPassword))
 	}
 
@@ -163,6 +169,7 @@ func (u *Updater) read(r *reader.Reader) (err error) {
 		}
 	}
 	u.ProtonPassword = r.Get("UPDATER_PROTONVPN_PASSWORD")
+	u.ProtonUsername = r.Get("UPDATER_PROTONVPN_USERNAME")
 
 	return nil
 }

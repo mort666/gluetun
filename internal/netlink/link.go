@@ -46,6 +46,8 @@ func (n *NetLink) LinkList() (links []Link, err error) {
 	return links, nil
 }
 
+var ErrLinkNotFound = errors.New("link not found")
+
 func (n *NetLink) LinkByName(name string) (link Link, err error) {
 	links, err := n.LinkList()
 	if err != nil {

@@ -3,6 +3,7 @@ package settings
 import (
 	"fmt"
 	"net/netip"
+	"slices"
 	"time"
 
 	"github.com/qdm12/dns/v2/pkg/provider"
@@ -59,6 +60,25 @@ func (d DNS) validate() (err error) {
 		err = d.validateForServerOff()
 		if err != nil {
 			return err
+		}
+		if !selectedHasPlainIPv4 && len(provider.Plain.IPv4) > 0 {
+			selectedHasPlainIPv4 = true
+		}
+		if !selectedHasPlainIPv6 && len(provider.Plain.IPv6) > 0 {
+			selectedHasPlainIPv6 = true
+		}
+	}
+
+	if d.UpstreamType == DNSUpstreamTypePlain {
+		if *d.IPv6 && !selectedHasPlainIPv6 &&
+			!slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
+				return addrPort.Addr().Is6()
+			}) {
+			return fmt.Errorf("%w: in %d addresses", ErrDNSUpstreamPlainNoIPv6, len(d.UpstreamPlainAddresses))
+		} else if !selectedHasPlainIPv4 && !slices.ContainsFunc(d.UpstreamPlainAddresses, func(addrPort netip.AddrPort) bool {
+			return addrPort.Addr().Is4()
+		}) {
+			return fmt.Errorf("%w: in %d addresses", ErrDNSUpstreamPlainNoIPv4, len(d.UpstreamPlainAddresses))
 		}
 	}
 
@@ -134,7 +154,6 @@ func (d *DNS) Copy() (copied DNS) {
 // settings object with any field set in the other
 // settings.
 func (d *DNS) overrideWith(other DNS) {
-	d.ServerEnabled = gosettings.OverrideWithPointer(d.ServerEnabled, other.ServerEnabled)
 	d.UpstreamType = gosettings.OverrideWithComparable(d.UpstreamType, other.UpstreamType)
 	d.UpdatePeriod = gosettings.OverrideWithPointer(d.UpdatePeriod, other.UpdatePeriod)
 	d.Providers = gosettings.OverrideWithSlice(d.Providers, other.Providers)
@@ -216,11 +235,6 @@ func (d DNS) toLinesNode() (node *gotree.Node) {
 }
 
 func (d *DNS) read(r *reader.Reader) (err error) {
-	d.ServerEnabled, err = r.BoolPtr("DNS_SERVER", reader.RetroKeys("DOT"))
-	if err != nil {
-		return err
-	}
-
 	d.UpstreamType = r.String("DNS_UPSTREAM_RESOLVER_TYPE")
 
 	d.UpdatePeriod, err = r.DurationPtr("DNS_UPDATE_PERIOD")

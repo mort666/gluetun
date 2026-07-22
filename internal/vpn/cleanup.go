@@ -57,3 +57,14 @@ func getVPNInterface(settings settings.VPN) string {
 		panic("invalid VPN type: " + settings.Type)
 	}
 }
+
+func getVPNInterface(settings settings.VPN) string {
+	switch settings.Type {
+	case vpn.OpenVPN:
+		return settings.OpenVPN.Interface
+	case vpn.Wireguard:
+		return settings.Wireguard.Interface
+	default:
+		panic("invalid VPN type: " + settings.Type)
+	}
+}

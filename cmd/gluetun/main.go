@@ -47,14 +47,6 @@ import (
 	"github.com/qdm12/gluetun/internal/updater/resolver"
 	"github.com/qdm12/gluetun/internal/updater/unzip"
 	"github.com/qdm12/gluetun/internal/vpn"
-	"github.com/qdm12/gosettings/reader"
-	"github.com/qdm12/gosettings/reader/sources/env"
-	"github.com/qdm12/goshutdown"
-	"github.com/qdm12/goshutdown/goroutine"
-	"github.com/qdm12/goshutdown/group"
-	"github.com/qdm12/goshutdown/order"
-	"github.com/qdm12/gosplash"
-	"github.com/qdm12/log"
 )
 
 //nolint:gochecknoglobals
